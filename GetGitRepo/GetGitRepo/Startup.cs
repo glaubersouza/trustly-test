@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -25,7 +26,21 @@ namespace GetGitRepo
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddRouting(op => op.LowercaseUrls = true);
+
+            services.Configure<GzipCompressionProviderOptions>(op => op.Level = System.IO.Compression.CompressionLevel.Optimal);
+
+            services.AddResponseCompression(op =>
+            {
+                op.Providers.Add<GzipCompressionProvider>();
+            });
+
             services.AddControllers();
+
+            services.AddHttpClient("GitHub", client =>
+            {
+                client.BaseAddress = new Uri("https://github.com/");
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -35,6 +50,8 @@ namespace GetGitRepo
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseResponseCompression(); 
 
             app.UseHttpsRedirection();
 
